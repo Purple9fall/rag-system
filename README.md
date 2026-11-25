@@ -198,6 +198,21 @@ Response gồm `answer`, `stats` (số tài liệu sau filter, số chunk hybrid
 | `DEFAULT_LANGUAGE` | `vi` | Ngôn ngữ gán cho tài liệu khi không truyền `--language` |
 | `DEVICE` | trống | `cpu`, `cuda`, `mps` |
 
+## Duyệt tài liệu đã thu thập
+
+Luồng collection ghi metadata vào manifest JSONL và có thể đánh dấu `review_required` theo điểm chất lượng. Dùng CLI riêng để kiểm tra nhanh nguồn/file và ghi quyết định của người duyệt:
+
+```bash
+python scripts/review_collection.py
+python scripts/review_collection.py --show-all
+python scripts/review_collection.py --set 'doi:10.1234/example' \
+  --decision accepted --reviewer 'Tên người duyệt' --note 'Đã kiểm tra nguồn và phiên bản'
+```
+
+Lệnh đầu liệt kê record chưa duyệt cùng gợi ý và lý do; `--show-all` cũng hiện các record đã có quyết định. Quyết định được ghi vào `review_status`, `reviewed_by`, `reviewed_at`, `review_note` trong manifest. Các lựa chọn là `accepted`, `needs_review`, `rejected`. Kiểm tra tự động chỉ phát hiện vấn đề cấu trúc/nguồn gốc như thiếu DOI/URL, metadata-only, file mất/hỏng hoặc nội dung trùng. Nó không tự kết luận độ uy tín khoa học; `accepted` chỉ được đặt khi người duyệt chủ động ghi quyết định.
+
+Để lấy `identity` chính xác, xem danh sách từ lệnh đầu rồi truyền nguyên giá trị sau `--set` (ví dụ `doi:...` hoặc `arxiv:...`).
+
 ## Dùng API và database miễn phí
 
 Phần này hướng dẫn thay Docker local bằng dịch vụ cloud miễn phí và dùng LLM miễn phí. Các gói miễn phí và tên model đổi thường xuyên, hãy kiểm tra lại trên trang của từng nhà cung cấp.
