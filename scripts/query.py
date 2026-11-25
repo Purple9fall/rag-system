@@ -18,15 +18,29 @@ def main() -> None:
     p.add_argument("--after", type=datetime.fromisoformat, help="YYYY-MM-DD")
     p.add_argument("--before", type=datetime.fromisoformat, help="YYYY-MM-DD")
     p.add_argument("--top-k", type=int, default=None)
+    p.add_argument("--collection", action="store_true", help="Gioi han vao collection photonic IC")
+    p.add_argument("--topic", help="Topic trong collection; dung kem --collection")
     p.add_argument("--no-answer", action="store_true", help="Chi in ket qua truy xuat")
     args = p.parse_args()
+    if args.topic and not args.collection:
+        p.error("--topic can --collection")
+    tags = list(args.tags or [])
+    if args.collection:
+        from collection.config_loader import load_collection
+
+        collection = load_collection()
+        if args.topic and args.topic not in collection["topics"]:
+            p.error(f"Topic khong ton tai: {args.topic}")
+        tags.append(collection["settings"]["collection_id"])
+        if args.topic:
+            tags.append(args.topic)
 
     settings = load_settings()
     funnel = build_funnel(settings)
     filters = SearchFilters(
         file_types=args.file_types,
         languages=args.languages,
-        tags=args.tags,
+        tags=tags or None,
         file_names=args.file_names,
         created_after=args.after,
         created_before=args.before,

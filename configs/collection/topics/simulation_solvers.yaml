@@ -1,0 +1,15 @@
+id: simulation_solvers
+collection_id: 01_photonicICfundamental
+enabled: true
+description: Maxwell equations, FDTD, EME, varFDTD, and mode solvers.
+search_queries:
+  - "photonic integrated circuit eigenmode expansion EME simulation"
+  - "photonic waveguide finite difference time domain FDTD simulation"
+  - "finite difference eigenmode FDE waveguide mode solver"
+  - "Maxwell equations varFDTD photonic simulation"
+arxiv_queries:
+  - "all:photonic AND all:FDTD"
+  - "all:waveguide AND all:eigenmode"
+core_terms: ["eigenmode expansion", "FDTD", "varFDTD", "finite difference eigenmode", "FDE solver"]
+context_terms: ["mode solver", "mesh convergence", "boundary conditions", "waveguide", "S parameter"]
+exclude_terms: ["computational fluid dynamics", "thermal-only simulation"]

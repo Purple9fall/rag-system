@@ -1,0 +1,33 @@
+# Collection configuration for the 01_photonicICfundamental corpus.
+version: 1
+collection_id: 01_photonicICfundamental
+enabled: true
+paths:
+  raw_dir: data/raw
+  manifest_file: data/metadata/documents.jsonl
+  collection_log_file: data/metadata/collection_log.jsonl
+  temp_dir: data/temp
+  topics_dir: configs/collection/topics
+  sources_file: configs/collection/sources.yaml
+  constraints_file: configs/collection/constraints.yaml
+  scoring_file: configs/collection/scoring.yaml
+
+run:
+  mode: incremental  # Upsert by DOI, arXiv ID, canonical URL, then content hash.
+  schedule: "0 2 * * 0"  # Weekly, interpreted in timezone below.
+  timezone: Asia/Ho_Chi_Minh
+  max_records_per_topic_per_source: 200
+  max_downloads_per_run: 300
+  max_concurrent_requests: 2
+  request_timeout_seconds: 30
+  retries: 3
+  retry_backoff_seconds: 2
+  user_agent: "rag-system-collection/0.1 (set CRAWLER_CONTACT_EMAIL before use)"
+  contact_email_env: CRAWLER_CONTACT_EMAIL
+
+output:
+  save_metadata: true
+  save_full_text: true
+  full_text_formats: [pdf, html]
+  record_provenance: true
+  overwrite_existing: false

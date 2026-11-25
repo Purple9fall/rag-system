@@ -5,6 +5,10 @@ Hệ thống RAG xử lý tài liệu bằng **Docling / Unstructured / Apache T
 ## Kiến trúc
 
 ```
+                        COLLECTION (tùy chọn)
+API học thuật / trang tài liệu ──► tìm kiếm, lọc, chấm điểm
+                              ──► data/raw/<topic>/ + data/metadata/*.jsonl
+
                          INGEST
  file ──► parser (Docling → Unstructured → Tika, có fallback)
       ──► chunk (MarkdownNodeParser → SentenceSplitter, LlamaIndex)
@@ -42,13 +46,21 @@ rag-system/
 ├── docker-compose.yml        # PostgreSQL + Qdrant
 ├── .env.example              # copy thành .env
 ├── sql/schema.sql            # bảng documents, chunks, index
+├── configs/collection/       # nguồn, điều kiện, scoring, chủ đề
 ├── data/
-│   ├── raw/                  # bỏ tài liệu vào đây
+│   ├── raw/                  # tài liệu theo chủ đề
+│   ├── metadata/             # documents.jsonl, collection_log.jsonl
+│   ├── temp/
 │   └── processed/
 ├── scripts/
 │   ├── init_db.py            # tạo schema + collection
-│   ├── ingest.py             # nạp tài liệu
-│   └── query.py              # hỏi đáp qua CLI
+│   ├── ingest.py             # nạp file hoặc collection manifest
+│   ├── query.py              # hỏi đáp, hỗ trợ lọc collection/topic
+│   ├── collect_data.py       # chạy collection
+│   └── evaluate_rag.py       # đánh giá retrieval
+├── src/collection/           # tìm kiếm, crawl, tải, lọc, chấm điểm, metadata
+├── src/ingestion/            # điều phối ingest corpus
+├── src/retrieval/            # truy xuất và đánh giá corpus
 ├── src/rag/
 │   ├── config.py             # đọc cấu hình từ .env
 │   ├── models.py             # SearchFilters, Candidate, FunnelResult...
@@ -101,6 +113,59 @@ python scripts/query.py "Điều khoản thanh toán là gì?" --no-answer     #
 ```
 
 Lần chạy đầu sẽ tải model (bge-m3, bge-reranker-v2-m3, BM25) và Docling tải model layout/OCR, nên mất thời gian.
+
+### Thu thập tài liệu PIC bằng crawler
+
+Crawler cho collection `01_photonicICfundamental` có 11 topic trong `configs/collection/topics/`. Nguồn, điều kiện lọc, giới hạn request và điểm chọn tài liệu nằm trong bốn file YAML dùng chung ở `configs/collection/`. Crawler dùng `urllib` để tải và BeautifulSoup để đọc HTML. **Crawl và ingestion là hai bước riêng:** `collect_data.py` không tạo embedding, không kết nối PostgreSQL/Qdrant và không tự gọi `ingest.py`. Bạn có thể thử crawl trước khi khởi động database hoặc cấu hình LLM.
+
+Sau khi cài project bằng `pip install -e .` như ở trên, đặt email liên hệ cho User-Agent trong môi trường shell. `collect_data.py` không tự đọc biến này từ `.env`:
+
+```bash
+export CRAWLER_CONTACT_EMAIL='you@example.com'
+python scripts/collect_data.py --topic pic_fundamentals --dry-run
+```
+
+`--dry-run` vẫn gửi request và có thể tải nội dung vào bộ nhớ, nhưng không ghi file, manifest hoặc log. Khi kết quả phù hợp, chạy thật:
+
+```bash
+python scripts/collect_data.py --topic pic_fundamentals
+python scripts/collect_data.py --topic mmi_coupler --topic mmi_geometry  # nhiều topic
+python scripts/collect_data.py                                      # cả 11 topic
+```
+
+Kết quả in ra là JSON: `discovered` là số ứng viên, `selected` là số đạt điều kiện và điểm tối thiểu, `saved` là số bản ghi/topic mới trong manifest, `downloaded` là số bản ghi có toàn văn được xử lý, `skipped` là số bị bỏ qua và `failed` là số lỗi được cộng vào thống kê. Với `--dry-run`, `saved` và `downloaded` chỉ là số dự kiến vì không có file nào được ghi. **`saved` không đồng nghĩa có file**: Crossref hiện chỉ cung cấp metadata, nên có thể thấy `saved: 7, downloaded: 0`. Một số lỗi ở từng trang chỉ hiện thành `WARNING` trên terminal. Chạy lại sẽ dùng manifest để bỏ qua các bản ghi đã có; không cần xóa dữ liệu cũ.
+
+Tài liệu PDF/HTML được lưu ở `data/raw/<topic>/`; `pic_fundamentals` có thêm các thư mục `architecture`, `waveguides`, `propagation`, `modes`, `mode_interaction`. Metadata và log từng lượt nằm ở `data/metadata/documents.jsonl` và `data/metadata/collection_log.jsonl`. Hai file JSONL chỉ xuất hiện sau khi chạy thật. Kiểm tra kết quả bằng:
+
+Một lượt chạy tất cả topic không bảo đảm mọi thư mục `raw` đều có file: Crossref chỉ lưu metadata, còn arXiv/Ansys phải trả được toàn văn và tài liệu phải vượt qua bộ lọc. Crawler cảnh báo những topic chưa có tài liệu toàn văn. Nếu một tài liệu phù hợp với nhiều topic, crawler dùng lại nội dung trong từng thư mục topic.
+
+```bash
+find data/raw -type f ! -name .gitkeep | sort
+tail -n 3 data/metadata/collection_log.jsonl
+```
+
+Nguồn Ansys chỉ áp dụng cho một số topic kỹ thuật, không dùng cho `pic_fundamentals`. Nếu host trả HTTP 403, crawler dừng gọi host đó trong lượt chạy. arXiv dùng endpoint API công khai với khoảng cách tối thiểu 3 giây giữa các request; URL PDF vẫn qua kiểm tra `robots.txt`. OpenAlex mặc định tắt. Nếu `downloaded` bằng 0, xem các dòng `WARNING Discovery failed for arxiv/...` trước khi thay đổi config.
+
+Khi đã có file toàn văn và muốn nạp chúng vào RAG, khởi động PostgreSQL/Qdrant, chạy `scripts/init_db.py` theo hướng dẫn ở trên, rồi gọi ingestion riêng:
+
+```bash
+python scripts/ingest.py --collection --topic pic_fundamentals
+python scripts/query.py 'What is an optical waveguide mode?' --collection --topic pic_fundamentals
+```
+
+`ingest.py --collection` chỉ nạp các bản ghi có `file_path` trong manifest; bản ghi chỉ có metadata sẽ không được nạp. Bỏ `--topic` để nạp tất cả topic. Lịch trong `settings.yaml` chưa được nối với scheduler; các lệnh crawl hiện chạy thủ công.
+
+Mỗi dòng của bộ đánh giá JSONL cần `question` và `relevant_files` (danh sách tên file từ manifest), có thể thêm `topic_id`. Ví dụ:
+
+```json
+{"question":"How does self imaging work in an MMI coupler?","topic_id":"mmi_coupler","relevant_files":["<sha256>.pdf"]}
+```
+
+```bash
+python scripts/evaluate_rag.py path/to/questions.jsonl --top-k 5 --output data/processed/01_photonicICfundamental/evaluation.json
+```
+
+Kết quả đánh giá gồm hit rate@k và MRR@k. Cấu hình lịch trong `settings.yaml` là thông số cho scheduler sẽ tích hợp sau; chạy các script trên là thủ công.
 
 ### API
 

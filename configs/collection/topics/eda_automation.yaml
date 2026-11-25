@@ -1,0 +1,15 @@
+id: eda_automation
+collection_id: 01_photonicICfundamental
+enabled: true
+description: Python EDA automation with Lumerical API, GDSFactory, geometry scripting, and sweeps.
+search_queries:
+  - "Lumerical scripting language photonic simulation automation"
+  - "Lumerical lumapi Python API FDTD MODE"
+  - "photonic design automation parameter sweep optimization Python"
+  - "GDSFactory photonic geometry scripting parameter sweep"
+arxiv_queries:
+  - "all:photonic AND all:automation"
+  - "all:photonic AND all:GDSFactory"
+core_terms: ["Lumerical scripting", "lumapi", "Lumerical Python API", "GDSFactory", "photonic design automation"]
+context_terms: ["FDTD", "MODE", "parameter sweep", "optimization", "simulation workflow"]
+exclude_terms: ["electronic PCB routing", "browser automation"]

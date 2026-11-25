@@ -1,0 +1,1 @@
+"""Collection ingestion entry points."""

@@ -1,0 +1,56 @@
+id: pic_fundamentals
+collection_id: 01_photonicICfundamental
+enabled: true
+description: "Photonic integrated circuit foundations: waveguides, modes, materials, and basic devices."
+subtopics:
+  - id: PIC-01
+    name: PIC Architecture
+    directory: architecture
+    description: Building blocks and system architecture of photonic integrated circuits.
+    search_queries: ["photonic integrated circuit architecture building blocks"]
+    required_concepts: ["photonic integrated circuit", "architecture"]
+    target_documents: [journal_article, technical_documentation, preprint]
+    match_terms: [architecture, building blocks]
+  - id: PIC-02
+    name: Optical Waveguides
+    directory: waveguides
+    description: Waveguide geometry, confinement and effective index.
+    search_queries: ["integrated optical waveguide confinement effective index"]
+    required_concepts: [waveguide, confinement]
+    target_documents: [journal_article, conference_paper, preprint]
+    match_terms: [waveguide]
+  - id: PIC-03
+    name: Optical Propagation
+    directory: propagation
+    description: Propagation loss, dispersion and phase accumulation.
+    search_queries: ["integrated photonics propagation loss dispersion"]
+    required_concepts: [propagation, dispersion]
+    target_documents: [journal_article, conference_paper, technical_documentation]
+    match_terms: [propagation, dispersion, loss]
+  - id: PIC-04
+    name: Optical Modes
+    directory: modes
+    description: Guided modes, polarization and modal indices.
+    search_queries: ["optical waveguide TE TM modes effective index"]
+    required_concepts: [guided mode, effective index]
+    target_documents: [journal_article, preprint, technical_documentation]
+    match_terms: [mode, effective index]
+  - id: PIC-05
+    name: Mode Interaction
+    directory: mode_interaction
+    description: Coupling and interference between guided modes.
+    search_queries: ["integrated photonics mode coupling interference"]
+    required_concepts: [mode coupling, interference]
+    target_documents: [journal_article, conference_paper, technical_documentation]
+    match_terms: [coupling, interaction, interference]
+search_queries:
+  - "photonic integrated circuits waveguide fundamentals"
+  - "integrated photonics optical waveguide modes coupling"
+  - "photonic integrated circuits design principles review"
+arxiv_queries:
+  - "all:photonic AND all:waveguide"
+  - "all:integrated AND all:photonics"
+  - "all:optical AND all:modes"
+core_terms: ["photonic integrated circuit", "integrated photonics", "optical waveguide"]
+context_terms: ["guided mode", "effective index", "coupling", "dispersion", "fabrication"]
+exclude_terms: ["photovoltaic", "photonic crystal fiber"]

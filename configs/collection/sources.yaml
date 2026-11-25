@@ -1,0 +1,55 @@
+# API results are discovery metadata. Download full text only from a permitted OA URL.
+version: 1
+sources:
+  - id: crossref
+    name: Crossref
+    kind: scholarly_api
+    enabled: true
+    endpoint: https://api.crossref.org/works
+    search_parameter: query.bibliographic
+    result_format: json
+    max_results_per_request: 100
+    min_interval_seconds: 1
+    metadata_only: true
+    documentation: https://www.crossref.org/documentation/retrieve-metadata/rest-api/
+
+  - id: arxiv
+    name: arXiv
+    kind: scholarly_api
+    enabled: true
+    endpoint: https://export.arxiv.org/api/query
+    api_access_policy: documented_public_api  # Applies only to this exact API endpoint.
+    search_parameter: search_query
+    result_format: atom
+    max_results_per_request: 100
+    min_interval_seconds: 3
+    metadata_only: false
+    full_text_link: pdf_from_record
+    documentation: https://info.arxiv.org/help/api/index.html
+
+  - id: ansys_optics
+    name: Ansys Optics Knowledge Base
+    kind: seed_pages
+    enabled: true
+    allowed_domains: [optics.ansys.com]
+    seed_urls:
+      - https://optics.ansys.com/hc/en-us/articles/42325093231251-Lumerical-Knowledge-Base
+      - https://optics.ansys.com/hc/en-us/articles/38660003331859-Lumerical-Python-API-Reference
+    follow_links: true
+    max_depth: 1
+    min_interval_seconds: 2
+    metadata_only: false
+    allowed_topics: [simulation_solvers, ansys_lumerical, performance_metrics, eda_automation]
+
+  - id: openalex
+    name: OpenAlex
+    kind: scholarly_api
+    enabled: false  # Enable after provisioning API access and accounting for search costs.
+    endpoint: https://api.openalex.org/works
+    search_parameter: search
+    result_format: json
+    max_results_per_request: 100
+    min_interval_seconds: 1
+    api_key_env: OPENALEX_API_KEY
+    metadata_only: true
+    documentation: https://help.openalex.org/api/

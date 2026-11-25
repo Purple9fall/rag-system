@@ -1,0 +1,13 @@
+id: ansys_lumerical
+collection_id: 01_photonicICfundamental
+enabled: true
+description: Ansys Lumerical MODE/FDTD setup, monitors, ports, and scripts.
+search_queries:
+  - "Ansys Lumerical MODE FDTD simulation setup monitors ports"
+  - "Lumerical photonic simulation scripting documentation"
+arxiv_queries:
+  - "all:Lumerical AND all:MODE"
+  - "all:Lumerical AND all:FDTD"
+core_terms: ["Lumerical", "Ansys Optics"]
+context_terms: ["MODE", "FDTD", "monitor", "port", "script", "simulation setup"]
+exclude_terms: ["ANSYS Mechanical", "structural mechanics"]

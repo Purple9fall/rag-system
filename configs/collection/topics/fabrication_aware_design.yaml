@@ -1,0 +1,13 @@
+id: fabrication_aware_design
+collection_id: 01_photonicICfundamental
+enabled: true
+description: Width and thickness variations, etch bias, tolerance, and PDK design rules.
+search_queries:
+  - "photonic integrated circuit fabrication aware design tolerance"
+  - "SiN MMI width thickness variation etch bias PDK rules"
+arxiv_queries:
+  - "all:photonic AND all:fabrication AND all:tolerance"
+  - "all:waveguide AND all:etch AND all:bias"
+core_terms: ["fabrication-aware", "fabrication tolerance", "etch bias", "PDK design rules"]
+context_terms: ["width variation", "thickness variation", "SiN", "MMI", "robust design"]
+exclude_terms: ["printed circuit board", "mechanical machining"]

@@ -1,0 +1,13 @@
+id: optimization_algorithms
+collection_id: 01_photonicICfundamental
+enabled: true
+description: DOE, parameter sweeps, Bayesian optimization, and multi-objective PIC optimization.
+search_queries:
+  - "photonic device design of experiments parameter sweep"
+  - "MMI coupler Bayesian optimization multi objective"
+arxiv_queries:
+  - "all:photonic AND all:optimization"
+  - "all:MMI AND all:optimization"
+core_terms: ["photonic optimization", "MMI optimization", "Bayesian optimization", "design of experiments"]
+context_terms: ["parameter sweep", "DOE", "multi-objective", "Pareto", "design variables"]
+exclude_terms: ["portfolio optimization", "logistics routing"]

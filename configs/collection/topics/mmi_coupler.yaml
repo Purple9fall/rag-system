@@ -1,0 +1,14 @@
+id: mmi_coupler
+collection_id: 01_photonicICfundamental
+enabled: true
+description: MMI coupler theory, self-imaging, beat length, and 2x2 MMI.
+search_queries:
+  - "multimode interference MMI coupler self imaging design"
+  - "multimode interference 2x2 MMI beat length"
+  - "MMI splitter excess loss imbalance bandwidth"
+arxiv_queries:
+  - "all:multimode AND all:interference"
+  - "all:MMI AND all:coupler"
+core_terms: ["multimode interference", "MMI coupler", "MMI splitter"]
+context_terms: ["self imaging", "beat length", "split ratio", "excess loss", "bandwidth"]
+exclude_terms: ["multimodal machine learning", "microwave MMI"]
