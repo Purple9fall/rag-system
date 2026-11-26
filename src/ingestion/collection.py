@@ -14,11 +14,16 @@ def ingest_collection(config: dict, topic_ids: list[str] | None = None, force: b
     if unknown:
         raise ValueError(f"Unknown topics: {sorted(unknown)}")
     ingestor = build_ingestor(load_settings())
-    result = {"ingested": 0, "skipped": 0, "failed": 0}
+    result = {"ingested": 0, "skipped": 0, "failed": 0, "not_accepted": 0}
     files: dict[Path, set[str]] = {}
     for line in manifest.read_text(encoding="utf-8").splitlines():
         entry = json.loads(line)
-        if entry["topic_id"] not in selected or not entry.get("file_path"):
+        if entry["topic_id"] not in selected:
+            continue
+        if entry.get("review_status") != "accepted":
+            result["not_accepted"] += 1
+            continue
+        if not entry.get("file_path"):
             continue
         path = config["root"] / entry["file_path"]
         files.setdefault(path, set()).add(entry["topic_id"])
