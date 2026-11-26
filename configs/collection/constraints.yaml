@@ -26,6 +26,26 @@ quality:
   # Preserve the published version when both it and a preprint are available.
   preferred_version_order: [published, accepted_manuscript, preprint]
 
+automatic_validation:
+  minimum_acceptance_score: 70
+  minimum_documentation_score: 55
+  # Only these publisher names, as reported by Crossref/OpenAlex, can qualify
+  # scholarly records for automatic acceptance. Extend this list deliberately.
+  trusted_publishers:
+    - IEEE
+    - Institute of Electrical and Electronics Engineers
+    - The Institute of Electrical and Electronics Engineers, Inc.
+    - Optica Publishing Group
+    - The Optical Society
+    - Optical Society of America
+    - SPIE
+    - Society of Photo-Optical Instrumentation Engineers
+  # Official documentation sources are trusted by source ID and their URL
+  # domain allowlist in sources.yaml.
+  trusted_documentation_sources: [ansys_optics]
+  require_doi_for_scholarly: true
+  require_full_text: true
+
 deduplication:
   identity_order: [doi, arxiv_id, canonical_url, sha256]
   normalize_doi: true

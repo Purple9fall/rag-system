@@ -1,0 +1,261 @@
+[1mdiff --git a/README.md b/README.md[m
+[1mindex 2868706..458deec 100644[m
+[1m--- a/README.md[m
+[1m+++ b/README.md[m
+[36m@@ -133,7 +133,7 @@[m [mpython scripts/collect_data.py --topic mmi_coupler --topic mmi_geometry  # nhi[m
+ python scripts/collect_data.py                                      # cả 11 topic[m
+ ```[m
+ [m
+[31m-Kết quả in ra là JSON: `discovered` là số ứng viên, `selected` là số đạt điều kiện và điểm tối thiểu, `saved` là số bản ghi/topic mới trong manifest, `downloaded` là số bản ghi có toàn văn được xử lý, `skipped` là số bị bỏ qua và `failed` là số lỗi được cộng vào thống kê. Với `--dry-run`, `saved` và `downloaded` chỉ là số dự kiến vì không có file nào được ghi. **`saved` không đồng nghĩa có file**: Crossref hiện chỉ cung cấp metadata, nên có thể thấy `saved: 7, downloaded: 0`. Một số lỗi ở từng trang chỉ hiện thành `WARNING` trên terminal. Chạy lại sẽ dùng manifest để bỏ qua các bản ghi đã có; không cần xóa dữ liệu cũ.[m
+[32m+[m[32mKết quả in ra là JSON: `discovered` là số ứng viên, `selected` là số đạt điều kiện và điểm tối thiểu, `auto_accepted` là số được chấp nhận tự động, `needs_review` là số được cách ly vì chưa đủ bằng chứng, `rejected` là số loại bỏ do điều kiện đầu vào/điểm tối thiểu không đạt, `saved` là số bản ghi/topic mới trong manifest, `downloaded` là số bản ghi có toàn văn được xử lý, `skipped` là số bị bỏ qua và `failed` là số lỗi. `needs_review` không cần người xử lý; ingestion bỏ qua trạng thái đó. Với `--dry-run`, `saved` và `downloaded` chỉ là số dự kiến vì không có file nào được ghi. **`saved` không đồng nghĩa có file**: Crossref hiện chỉ cung cấp metadata, nên có thể thấy `saved: 7, downloaded: 0`. Một số lỗi ở từng trang chỉ hiện thành `WARNING` trên terminal. Chạy lại sẽ dùng manifest để cập nhật trạng thái tự động cho bản ghi đã có.[m
+ [m
+ Tài liệu PDF/HTML được lưu ở `data/raw/<topic>/`; `pic_fundamentals` có thêm các thư mục `architecture`, `waveguides`, `propagation`, `modes`, `mode_interaction`. Metadata và log từng lượt nằm ở `data/metadata/documents.jsonl` và `data/metadata/collection_log.jsonl`. Hai file JSONL chỉ xuất hiện sau khi chạy thật. Kiểm tra kết quả bằng:[m
+ [m
+[36m@@ -153,7 +153,7 @@[m [mpython scripts/ingest.py --collection --topic pic_fundamentals[m
+ python scripts/query.py 'What is an optical waveguide mode?' --collection --topic pic_fundamentals[m
+ ```[m
+ [m
+[31m-`ingest.py --collection` chỉ nạp các bản ghi có `file_path` trong manifest; bản ghi chỉ có metadata sẽ không được nạp. Bỏ `--topic` để nạp tất cả topic. Lịch trong `settings.yaml` chưa được nối với scheduler; các lệnh crawl hiện chạy thủ công.[m
+[32m+[m[32m`ingest.py --collection` chỉ nạp bản ghi có `review_status: accepted` và `file_path` trong manifest. Bản ghi `needs_review`, `rejected` hoặc cũ không có trạng thái sẽ bị bỏ qua, đồng thời được đếm ở `not_accepted`. Bỏ `--topic` để nạp tất cả topic. Lịch trong `settings.yaml` chưa được nối với scheduler; các lệnh crawl hiện chạy thủ công.[m
+ [m
+ Mỗi dòng của bộ đánh giá JSONL cần `question` và `relevant_files` (danh sách tên file từ manifest), có thể thêm `topic_id`. Ví dụ:[m
+ [m
+[36m@@ -198,9 +198,13 @@[m [mResponse gồm `answer`, `stats` (số tài liệu sau filter, số chunk hybrid[m
+ | `DEFAULT_LANGUAGE` | `vi` | Ngôn ngữ gán cho tài liệu khi không truyền `--language` |[m
+ | `DEVICE` | trống | `cpu`, `cuda`, `mps` |[m
+ [m
+[31m-## Duyệt tài liệu đã thu thập[m
+[32m+[m[32m## Validation tự động tài liệu đã thu thập[m
+ [m
+[31m-Luồng collection ghi metadata vào manifest JSONL và có thể đánh dấu `review_required` theo điểm chất lượng. Dùng CLI riêng để kiểm tra nhanh nguồn/file và ghi quyết định của người duyệt:[m
+[32m+[m[32mCrawler gán `review_status` tự động. Tài liệu đủ điểm (mặc định từ 70), có toàn văn và khớp chính sách nguồn được gán `accepted`; tài liệu chưa đủ bằng chứng như preprint, metadata-only hoặc nhà xuất bản chưa allowlist được gán `needs_review` và không đưa vào RAG. Ứng viên dưới điểm tối thiểu hoặc sai điều kiện chủ đề bị loại khỏi manifest. Lý do và phiên bản policy được lưu trong `validation_reasons` và `validation_policy_version`.[m
+[32m+[m
+[32m+[m[32mDanh sách nhà xuất bản và nguồn tài liệu kỹ thuật được cấu hình trong `configs/collection/constraints.yaml`. Mặc định cho phép tài liệu kỹ thuật từ Ansys Optics theo domain allowlist ở `sources.yaml`, và một số nhà xuất bản học thuật. Với cấu hình nguồn hiện tại, Crossref chỉ lấy metadata và arXiv là preprint; do đó các bài báo này chưa có toàn văn được tự chấp nhận. Muốn tự chấp nhận bài báo, cần bổ sung nguồn tải toàn văn hợp lệ. Allowlist nhà xuất bản không xác minh venue cụ thể có phản biện; hãy chỉnh danh sách theo chính sách corpus. Citation hiện là tín hiệu cộng điểm, không phải điều kiện bắt buộc.[m
+[32m+[m
+[32m+[m[32mCó thể dùng CLI review thủ công như công cụ kiểm tra/ghi đè ngoại lệ, nhưng không nằm trong luồng crawl tự động:[m
+ [m
+ ```bash[m
+ python scripts/review_collection.py[m
+[36m@@ -209,7 +213,7 @@[m [mpython scripts/review_collection.py --set 'doi:10.1234/example' \[m
+   --decision accepted --reviewer 'Tên người duyệt' --note 'Đã kiểm tra nguồn và phiên bản'[m
+ ```[m
+ [m
+[31m-Lệnh đầu liệt kê record chưa duyệt cùng gợi ý và lý do; `--show-all` cũng hiện các record đã có quyết định. Quyết định được ghi vào `review_status`, `reviewed_by`, `reviewed_at`, `review_note` trong manifest. Các lựa chọn là `accepted`, `needs_review`, `rejected`. Kiểm tra tự động chỉ phát hiện vấn đề cấu trúc/nguồn gốc như thiếu DOI/URL, metadata-only, file mất/hỏng hoặc nội dung trùng. Nó không tự kết luận độ uy tín khoa học; `accepted` chỉ được đặt khi người duyệt chủ động ghi quyết định.[m
+[32m+[m[32mLệnh đầu hiện trạng thái và lý do; `--show-all` cũng hiện các record đã có quyết định. Quyết định thủ công được ghi vào `review_status`, `reviewed_by`, `reviewed_at`, `review_note` trong manifest. Crawl tiếp theo sẽ tính lại trạng thái tự động theo policy cấu hình.[m
+ [m
+ Để lấy `identity` chính xác, xem danh sách từ lệnh đầu rồi truyền nguyên giá trị sau `--set` (ví dụ `doi:...` hoặc `arxiv:...`).[m
+ [m
+[1mdiff --git a/configs/collection/constraints.yaml b/configs/collection/constraints.yaml[m
+[1mindex 19508dc..e7febd6 100644[m
+[1m--- a/configs/collection/constraints.yaml[m
+[1m+++ b/configs/collection/constraints.yaml[m
+[36m@@ -26,6 +26,26 @@[m [mquality:[m
+   # Preserve the published version when both it and a preprint are available.[m
+   preferred_version_order: [published, accepted_manuscript, preprint][m
+ [m
+[32m+[m[32mautomatic_validation:[m
+[32m+[m[32m  minimum_acceptance_score: 70[m
+[32m+[m[32m  minimum_documentation_score: 55[m
+[32m+[m[32m  # Only these publisher names, as reported by Crossref/OpenAlex, can qualify[m
+[32m+[m[32m  # scholarly records for automatic acceptance. Extend this list deliberately.[m
+[32m+[m[32m  trusted_publishers:[m
+[32m+[m[32m    - IEEE[m
+[32m+[m[32m    - Institute of Electrical and Electronics Engineers[m
+[32m+[m[32m    - The Institute of Electrical and Electronics Engineers, Inc.[m
+[32m+[m[32m    - Optica Publishing Group[m
+[32m+[m[32m    - The Optical Society[m
+[32m+[m[32m    - Optical Society of America[m
+[32m+[m[32m    - SPIE[m
+[32m+[m[32m    - Society of Photo-Optical Instrumentation Engineers[m
+[32m+[m[32m  # Official documentation sources are trusted by source ID and their URL[m
+[32m+[m[32m  # domain allowlist in sources.yaml.[m
+[32m+[m[32m  trusted_documentation_sources: [ansys_optics][m
+[32m+[m[32m  require_doi_for_scholarly: true[m
+[32m+[m[32m  require_full_text: true[m
+[32m+[m
+ deduplication:[m
+   identity_order: [doi, arxiv_id, canonical_url, sha256][m
+   normalize_doi: true[m
+[1mdiff --git a/configs/collection/scoring.yaml b/configs/collection/scoring.yaml[m
+[1mindex af9d6e4..473ad1c 100644[m
+[1m--- a/configs/collection/scoring.yaml[m
+[1m+++ b/configs/collection/scoring.yaml[m
+[36m@@ -38,5 +38,4 @@[m [mrecency:[m
+ [m
+ selection:[m
+   minimum_score: 55[m
+[31m-  manual_review_below: 70[m
+   sort_by: [score_desc, published_date_desc][m
+[1mdiff --git a/src/collection/pipeline.py b/src/collection/pipeline.py[m
+[1mindex 26acd7d..8c8a565 100644[m
+[1m--- a/src/collection/pipeline.py[m
+[1m+++ b/src/collection/pipeline.py[m
+[36m@@ -13,6 +13,7 @@[m [mfrom .search import SearchMixin[m
+ from .deduplicator import identity as record_identity, load_existing[m
+ from .relevance_filter import valid_record[m
+ from .quality_scorer import score_record[m
+[32m+[m[32mfrom .auto_validation import validate_automatically[m
+ from .metadata import append_jsonl[m
+ from .coverage_checker import topic_coverage[m
+ [m
+[36m@@ -28,7 +29,7 @@[m [mclass Collector(Downloader, SearchMixin):[m
+         manifest = self.config["manifest_file"][m
+         raw_dir = self.config["raw_dir"][m
+         existing, seen_topic_pairs = load_existing(manifest)[m
+[31m-        stats = {"discovered": 0, "selected": 0, "saved": 0, "downloaded": 0, "skipped": 0, "failed": 0}[m
+[32m+[m[32m        stats = {"discovered": 0, "selected": 0, "auto_accepted": 0, "needs_review": 0, "rejected": 0, "saved": 0, "downloaded": 0, "skipped": 0, "failed": 0}[m
+         downloaded = 0[m
+         if not dry_run:[m
+             manifest.parent.mkdir(parents=True, exist_ok=True)[m
+[36m@@ -72,9 +73,11 @@[m [mclass Collector(Downloader, SearchMixin):[m
+                     for record in records:[m
+                         stats["discovered"] += 1[m
+                         if not valid_record(record, topic, self.constraints):[m
+[32m+[m[32m                            stats["rejected"] += 1[m
+                             continue[m
+                         score = score_record(record, topic, self.config["scoring"])[m
+                         if score < self.config["scoring"]["selection"]["minimum_score"]:[m
+[32m+[m[32m                            stats["rejected"] += 1[m
+                             continue[m
+                         stats["selected"] += 1[m
+                         identity = record_identity(record)[m
+[36m@@ -82,11 +85,36 @@[m [mclass Collector(Downloader, SearchMixin):[m
+                             pair = (identity, topic_id)[m
+                             if pair in seen_topic_pairs:[m
+                                 previous_file = existing[identity].get("file_path")[m
+[31m-                                if previous_file and not dry_run:[m
+[31m-                                    self._link_topic_file(self.config["root"] / previous_file, raw_dir / topic_id / self._category(topic, record["title"]) / (self.config["root"] / previous_file).name)[m
+[32m+[m[32m                                topic_file = previous_file[m
+[32m+[m[32m                                if previous_file:[m
+[32m+[m[32m                                    source_file = self.config["root"] / previous_file[m
+[32m+[m[32m                                    target_file = raw_dir / topic_id / self._category(topic, record["title"]) / source_file.name[m
+[32m+[m[32m                                    if not dry_run:[m
+[32m+[m[32m                                        self._link_topic_file(source_file, target_file)[m
+[32m+[m[32m                                    topic_file = str(target_file.relative_to(self.config["root"]))[m
+[32m+[m[32m                                has_full_text = bool(previous_file and (self.config["root"] / previous_file).is_file())[m
+[32m+[m[32m                                decision, reasons = validate_automatically([m
+[32m+[m[32m                                    {**existing[identity], **record}, source, score,[m
+[32m+[m[32m                                    self.constraints, has_full_text,[m
+[32m+[m[32m                                )[m
+[32m+[m[32m                                existing_entry = {[m
+[32m+[m[32m                                    **existing[identity],[m
+[32m+[m[32m                                    "topic_id": topic_id,[m
+[32m+[m[32m                                    "file_path": topic_file,[m
+[32m+[m[32m                                    "score": score,[m
+[32m+[m[32m                                    "review_status": decision,[m
+[32m+[m[32m                                    "review_required": decision != "accepted",[m
+[32m+[m[32m                                    "validation_method": "automatic",[m
+[32m+[m[32m                                    "validation_policy_version": 1,[m
+[32m+[m[32m                                    "validation_reasons": reasons,[m
+[32m+[m[32m                                }[m
+[32m+[m[32m                                if not dry_run:[m
+[32m+[m[32m                                    append_jsonl(manifest, existing_entry)[m
+[32m+[m[32m                                existing[identity] = existing_entry[m
+[32m+[m[32m                                stats["auto_accepted" if decision == "accepted" else "rejected" if decision == "rejected" else "needs_review"] += 1[m
+                                 stats["skipped"] += 1[m
+                             else:[m
+[31m-                                entry = {**existing[identity], "topic_id": topic_id, "score": score, "review_required": score < self.config["scoring"]["selection"]["manual_review_below"]}[m
+[32m+[m[32m                                entry = {**existing[identity], "topic_id": topic_id, "score": score}[m
+                                 previous_file = entry.get("file_path")[m
+                                 if previous_file:[m
+                                     source_file = self.config["root"] / previous_file[m
+[36m@@ -96,10 +124,22 @@[m [mclass Collector(Downloader, SearchMixin):[m
+                                         if not dry_run:[m
+                                             self._link_topic_file(source_file, target_file)[m
+                                         entry["file_path"] = str(target_file.relative_to(self.config["root"]))[m
+[32m+[m[32m                                decision, reasons = validate_automatically([m
+[32m+[m[32m                                    {**entry, **record}, source, score, self.constraints,[m
+[32m+[m[32m                                    bool(entry.get("file_path") and (self.config["root"] / entry["file_path"]).is_file()),[m
+[32m+[m[32m                                )[m
+[32m+[m[32m                                entry.update({[m
+[32m+[m[32m                                    "review_status": decision,[m
+[32m+[m[32m                                    "review_required": decision != "accepted",[m
+[32m+[m[32m                                    "validation_method": "automatic",[m
+[32m+[m[32m                                    "validation_policy_version": 1,[m
+[32m+[m[32m                                    "validation_reasons": reasons,[m
+[32m+[m[32m                                })[m
+                                 if not dry_run:[m
+                                     append_jsonl(manifest, entry)[m
+                                 seen_topic_pairs.add(pair)[m
+                                 stats["saved"] += 1[m
+[32m+[m[32m                                stats["auto_accepted" if decision == "accepted" else "rejected" if decision == "rejected" else "needs_review"] += 1[m
+                             continue[m
+                         if downloaded >= self.settings["run"]["max_downloads_per_run"] and not record.get("metadata_only"):[m
+                             break[m
+[36m@@ -128,7 +168,20 @@[m [mclass Collector(Downloader, SearchMixin):[m
+                             category = self._category(topic, record["title"])[m
+                             output = raw_dir / topic_id / category / f"{digest}{extension}"[m
+                         entry = {k: v for k, v in record.items() if k not in {"content", "extension", "body"}}[m
+[31m-                        entry.update({"identity": identity, "topic_id": topic_id, "source_id": source["id"], "score": score, "review_required": score < self.config["scoring"]["selection"]["manual_review_below"], "file_path": str(output.relative_to(self.config["root"])) if output else None})[m
+[32m+[m[32m                        entry.update({"identity": identity, "topic_id": topic_id, "source_id": source["id"], "score": score, "file_path": str(output.relative_to(self.config["root"])) if output else None})[m
+[32m+[m[32m                        decision, reasons = validate_automatically([m
+[32m+[m[32m                            entry, source, score, self.constraints, output is not None,[m
+[32m+[m[32m                        )[m
+[32m+[m[32m                        entry.update({[m
+[32m+[m[32m                            "review_status": decision,[m
+[32m+[m[32m                            "review_required": decision != "accepted",[m
+[32m+[m[32m                            "validation_method": "automatic",[m
+[32m+[m[32m                            "validation_policy_version": 1,[m
+[32m+[m[32m                            "validation_reasons": reasons,[m
+[32m+[m[32m                        })[m
+[32m+[m[32m                        if decision == "rejected":[m
+[32m+[m[32m                            stats["rejected"] += 1[m
+[32m+[m[32m                            continue[m
+                         if not dry_run:[m
+                             if output and not output.exists():[m
+                                 output.parent.mkdir(parents=True, exist_ok=True)[m
+[36m@@ -137,6 +190,7 @@[m [mclass Collector(Downloader, SearchMixin):[m
+                         existing[identity] = entry[m
+                         seen_topic_pairs.add((identity, topic_id))[m
+                         stats["saved"] += 1[m
+[32m+[m[32m                        stats["auto_accepted" if decision == "accepted" else "needs_review"] += 1[m
+                         if output:[m
+                             downloaded += 1[m
+                             stats["downloaded"] += 1[m
+[1mdiff --git a/src/collection/search.py b/src/collection/search.py[m
+[1mindex 35956ae..9d2ec23 100644[m
+[1m--- a/src/collection/search.py[m
+[1m+++ b/src/collection/search.py[m
+[36m@@ -21,7 +21,8 @@[m [mclass SearchMixin:[m
+             if not kind:[m
+                 continue[m
+             parts = item.get("published", {}).get("date-parts", [[]])[0][m
+[31m-            records.append({"title": (item.get("title") or [""])[0], "abstract": BeautifulSoup(item.get("abstract", ""), "html.parser").get_text(" ", strip=True), "url": item.get("URL", ""), "doi": item.get("DOI", ""), "year": parts[0] if parts else None, "citation_count": item.get("is-referenced-by-count"), "document_type": kind, "metadata_only": True})[m
+[32m+[m[32m            retracted = any(update.get("type") == "retraction" for update in item.get("update-to", []))[m
+[32m+[m[32m            records.append({"title": (item.get("title") or [""])[0], "abstract": BeautifulSoup(item.get("abstract", ""), "html.parser").get_text(" ", strip=True), "url": item.get("URL", ""), "doi": item.get("DOI", ""), "year": parts[0] if parts else None, "citation_count": item.get("is-referenced-by-count"), "publisher": item.get("publisher", ""), "container_title": (item.get("container-title") or [""])[0], "document_type": kind, "is_retracted": retracted, "metadata_only": True})[m
+         return records[m
+ [m
+     def _discover_arxiv(self, source: dict, query: str, limit: int) -> list[dict]:[m
+[36m@@ -52,7 +53,8 @@[m [mclass SearchMixin:[m
+             inverted = item.get("abstract_inverted_index") or {}[m
+             words = [(position, word) for word, positions in inverted.items() for position in positions][m
+             abstract = " ".join(word for _, word in sorted(words))[m
+[31m-            records.append({"title": item.get("display_name", ""), "abstract": abstract, "url": item.get("id", ""), "doi": (item.get("doi") or "").removeprefix("https://doi.org/"), "year": item.get("publication_year"), "citation_count": item.get("cited_by_count"), "document_type": kind, "metadata_only": True})[m
+[32m+[m[32m            primary_source = (item.get("primary_location") or {}).get("source") or {}[m
+[32m+[m[32m            records.append({"title": item.get("display_name", ""), "abstract": abstract, "url": item.get("id", ""), "doi": (item.get("doi") or "").removeprefix("https://doi.org/"), "year": item.get("publication_year"), "citation_count": item.get("cited_by_count"), "publisher": primary_source.get("host_organization_name", ""), "container_title": primary_source.get("display_name", ""), "document_type": kind, "is_retracted": item.get("is_retracted", False), "metadata_only": True})[m
+         return records[m
+ [m
+     def _discover_pages(self, source: dict) -> list[dict]:[m
+[1mdiff --git a/src/ingestion/collection.py b/src/ingestion/collection.py[m
+[1mindex e244cdd..d113db9 100644[m
+[1m--- a/src/ingestion/collection.py[m
+[1m+++ b/src/ingestion/collection.py[m
+[36m@@ -14,11 +14,16 @@[m [mdef ingest_collection(config: dict, topic_ids: list[str] | None = None, force: b[m
+     if unknown:[m
+         raise ValueError(f"Unknown topics: {sorted(unknown)}")[m
+     ingestor = build_ingestor(load_settings())[m
+[31m-    result = {"ingested": 0, "skipped": 0, "failed": 0}[m
+[32m+[m[32m    result = {"ingested": 0, "skipped": 0, "failed": 0, "not_accepted": 0}[m
+     files: dict[Path, set[str]] = {}[m
+     for line in manifest.read_text(encoding="utf-8").splitlines():[m
+         entry = json.loads(line)[m
+[31m-        if entry["topic_id"] not in selected or not entry.get("file_path"):[m
+[32m+[m[32m        if entry["topic_id"] not in selected:[m
+[32m+[m[32m            continue[m
+[32m+[m[32m        if entry.get("review_status") != "accepted":[m
+[32m+[m[32m            result["not_accepted"] += 1[m
+[32m+[m[32m            continue[m
+[32m+[m[32m        if not entry.get("file_path"):[m
+             continue[m
+         path = config["root"] / entry["file_path"][m
+         files.setdefault(path, set()).add(entry["topic_id"])[m

@@ -13,6 +13,7 @@ from .search import SearchMixin
 from .deduplicator import identity as record_identity, load_existing
 from .relevance_filter import valid_record
 from .quality_scorer import score_record
+from .auto_validation import validate_automatically
 from .metadata import append_jsonl
 from .coverage_checker import topic_coverage
 
@@ -28,7 +29,7 @@ class Collector(Downloader, SearchMixin):
         manifest = self.config["manifest_file"]
         raw_dir = self.config["raw_dir"]
         existing, seen_topic_pairs = load_existing(manifest)
-        stats = {"discovered": 0, "selected": 0, "saved": 0, "downloaded": 0, "skipped": 0, "failed": 0}
+        stats = {"discovered": 0, "selected": 0, "auto_accepted": 0, "needs_review": 0, "rejected": 0, "saved": 0, "downloaded": 0, "skipped": 0, "failed": 0}
         downloaded = 0
         if not dry_run:
             manifest.parent.mkdir(parents=True, exist_ok=True)
@@ -72,9 +73,11 @@ class Collector(Downloader, SearchMixin):
                     for record in records:
                         stats["discovered"] += 1
                         if not valid_record(record, topic, self.constraints):
+                            stats["rejected"] += 1
                             continue
                         score = score_record(record, topic, self.config["scoring"])
                         if score < self.config["scoring"]["selection"]["minimum_score"]:
+                            stats["rejected"] += 1
                             continue
                         stats["selected"] += 1
                         identity = record_identity(record)
@@ -82,11 +85,36 @@ class Collector(Downloader, SearchMixin):
                             pair = (identity, topic_id)
                             if pair in seen_topic_pairs:
                                 previous_file = existing[identity].get("file_path")
-                                if previous_file and not dry_run:
-                                    self._link_topic_file(self.config["root"] / previous_file, raw_dir / topic_id / self._category(topic, record["title"]) / (self.config["root"] / previous_file).name)
+                                topic_file = previous_file
+                                if previous_file:
+                                    source_file = self.config["root"] / previous_file
+                                    target_file = raw_dir / topic_id / self._category(topic, record["title"]) / source_file.name
+                                    if not dry_run:
+                                        self._link_topic_file(source_file, target_file)
+                                    topic_file = str(target_file.relative_to(self.config["root"]))
+                                has_full_text = bool(previous_file and (self.config["root"] / previous_file).is_file())
+                                decision, reasons = validate_automatically(
+                                    {**existing[identity], **record}, source, score,
+                                    self.constraints, has_full_text,
+                                )
+                                existing_entry = {
+                                    **existing[identity],
+                                    "topic_id": topic_id,
+                                    "file_path": topic_file,
+                                    "score": score,
+                                    "review_status": decision,
+                                    "review_required": decision != "accepted",
+                                    "validation_method": "automatic",
+                                    "validation_policy_version": 1,
+                                    "validation_reasons": reasons,
+                                }
+                                if not dry_run:
+                                    append_jsonl(manifest, existing_entry)
+                                existing[identity] = existing_entry
+                                stats["auto_accepted" if decision == "accepted" else "rejected" if decision == "rejected" else "needs_review"] += 1
                                 stats["skipped"] += 1
                             else:
-                                entry = {**existing[identity], "topic_id": topic_id, "score": score, "review_required": score < self.config["scoring"]["selection"]["manual_review_below"]}
+                                entry = {**existing[identity], "topic_id": topic_id, "score": score}
                                 previous_file = entry.get("file_path")
                                 if previous_file:
                                     source_file = self.config["root"] / previous_file
@@ -96,10 +124,22 @@ class Collector(Downloader, SearchMixin):
                                         if not dry_run:
                                             self._link_topic_file(source_file, target_file)
                                         entry["file_path"] = str(target_file.relative_to(self.config["root"]))
+                                decision, reasons = validate_automatically(
+                                    {**entry, **record}, source, score, self.constraints,
+                                    bool(entry.get("file_path") and (self.config["root"] / entry["file_path"]).is_file()),
+                                )
+                                entry.update({
+                                    "review_status": decision,
+                                    "review_required": decision != "accepted",
+                                    "validation_method": "automatic",
+                                    "validation_policy_version": 1,
+                                    "validation_reasons": reasons,
+                                })
                                 if not dry_run:
                                     append_jsonl(manifest, entry)
                                 seen_topic_pairs.add(pair)
                                 stats["saved"] += 1
+                                stats["auto_accepted" if decision == "accepted" else "rejected" if decision == "rejected" else "needs_review"] += 1
                             continue
                         if downloaded >= self.settings["run"]["max_downloads_per_run"] and not record.get("metadata_only"):
                             break
@@ -128,7 +168,20 @@ class Collector(Downloader, SearchMixin):
                             category = self._category(topic, record["title"])
                             output = raw_dir / topic_id / category / f"{digest}{extension}"
                         entry = {k: v for k, v in record.items() if k not in {"content", "extension", "body"}}
-                        entry.update({"identity": identity, "topic_id": topic_id, "source_id": source["id"], "score": score, "review_required": score < self.config["scoring"]["selection"]["manual_review_below"], "file_path": str(output.relative_to(self.config["root"])) if output else None})
+                        entry.update({"identity": identity, "topic_id": topic_id, "source_id": source["id"], "score": score, "file_path": str(output.relative_to(self.config["root"])) if output else None})
+                        decision, reasons = validate_automatically(
+                            entry, source, score, self.constraints, output is not None,
+                        )
+                        entry.update({
+                            "review_status": decision,
+                            "review_required": decision != "accepted",
+                            "validation_method": "automatic",
+                            "validation_policy_version": 1,
+                            "validation_reasons": reasons,
+                        })
+                        if decision == "rejected":
+                            stats["rejected"] += 1
+                            continue
                         if not dry_run:
                             if output and not output.exists():
                                 output.parent.mkdir(parents=True, exist_ok=True)
@@ -137,6 +190,7 @@ class Collector(Downloader, SearchMixin):
                         existing[identity] = entry
                         seen_topic_pairs.add((identity, topic_id))
                         stats["saved"] += 1
+                        stats["auto_accepted" if decision == "accepted" else "needs_review"] += 1
                         if output:
                             downloaded += 1
                             stats["downloaded"] += 1

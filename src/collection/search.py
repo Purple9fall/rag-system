@@ -21,7 +21,8 @@ class SearchMixin:
             if not kind:
                 continue
             parts = item.get("published", {}).get("date-parts", [[]])[0]
-            records.append({"title": (item.get("title") or [""])[0], "abstract": BeautifulSoup(item.get("abstract", ""), "html.parser").get_text(" ", strip=True), "url": item.get("URL", ""), "doi": item.get("DOI", ""), "year": parts[0] if parts else None, "citation_count": item.get("is-referenced-by-count"), "document_type": kind, "metadata_only": True})
+            retracted = any(update.get("type") == "retraction" for update in item.get("update-to", []))
+            records.append({"title": (item.get("title") or [""])[0], "abstract": BeautifulSoup(item.get("abstract", ""), "html.parser").get_text(" ", strip=True), "url": item.get("URL", ""), "doi": item.get("DOI", ""), "year": parts[0] if parts else None, "citation_count": item.get("is-referenced-by-count"), "publisher": item.get("publisher", ""), "container_title": (item.get("container-title") or [""])[0], "document_type": kind, "is_retracted": retracted, "metadata_only": True})
         return records
 
     def _discover_arxiv(self, source: dict, query: str, limit: int) -> list[dict]:
@@ -52,7 +53,8 @@ class SearchMixin:
             inverted = item.get("abstract_inverted_index") or {}
             words = [(position, word) for word, positions in inverted.items() for position in positions]
             abstract = " ".join(word for _, word in sorted(words))
-            records.append({"title": item.get("display_name", ""), "abstract": abstract, "url": item.get("id", ""), "doi": (item.get("doi") or "").removeprefix("https://doi.org/"), "year": item.get("publication_year"), "citation_count": item.get("cited_by_count"), "document_type": kind, "metadata_only": True})
+            primary_source = (item.get("primary_location") or {}).get("source") or {}
+            records.append({"title": item.get("display_name", ""), "abstract": abstract, "url": item.get("id", ""), "doi": (item.get("doi") or "").removeprefix("https://doi.org/"), "year": item.get("publication_year"), "citation_count": item.get("cited_by_count"), "publisher": primary_source.get("host_organization_name", ""), "container_title": primary_source.get("display_name", ""), "document_type": kind, "is_retracted": item.get("is_retracted", False), "metadata_only": True})
         return records
 
     def _discover_pages(self, source: dict) -> list[dict]:

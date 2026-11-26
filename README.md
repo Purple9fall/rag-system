@@ -133,7 +133,7 @@ python scripts/collect_data.py --topic mmi_coupler --topic mmi_geometry  # nhi�
 python scripts/collect_data.py                                      # cả 11 topic
 ```
 
-Kết quả in ra là JSON: `discovered` là số ứng viên, `selected` là số đạt điều kiện và điểm tối thiểu, `saved` là số bản ghi/topic mới trong manifest, `downloaded` là số bản ghi có toàn văn được xử lý, `skipped` là số bị bỏ qua và `failed` là số lỗi được cộng vào thống kê. Với `--dry-run`, `saved` và `downloaded` chỉ là số dự kiến vì không có file nào được ghi. **`saved` không đồng nghĩa có file**: Crossref hiện chỉ cung cấp metadata, nên có thể thấy `saved: 7, downloaded: 0`. Một số lỗi ở từng trang chỉ hiện thành `WARNING` trên terminal. Chạy lại sẽ dùng manifest để bỏ qua các bản ghi đã có; không cần xóa dữ liệu cũ.
+Kết quả in ra là JSON: `discovered` là số ứng viên, `selected` là số đạt điều kiện và điểm tối thiểu, `auto_accepted` là số được chấp nhận tự động, `needs_review` là số được cách ly vì chưa đủ bằng chứng, `rejected` là số loại bỏ do điều kiện đầu vào/điểm tối thiểu không đạt, `saved` là số bản ghi/topic mới trong manifest, `downloaded` là số bản ghi có toàn văn được xử lý, `skipped` là số bị bỏ qua và `failed` là số lỗi. `needs_review` không cần người xử lý; ingestion bỏ qua trạng thái đó. Với `--dry-run`, `saved` và `downloaded` chỉ là số dự kiến vì không có file nào được ghi. **`saved` không đồng nghĩa có file**: Crossref hiện chỉ cung cấp metadata, nên có thể thấy `saved: 7, downloaded: 0`. Một số lỗi ở từng trang chỉ hiện thành `WARNING` trên terminal. Chạy lại sẽ dùng manifest để cập nhật trạng thái tự động cho bản ghi đã có.
 
 Tài liệu PDF/HTML được lưu ở `data/raw/<topic>/`; `pic_fundamentals` có thêm các thư mục `architecture`, `waveguides`, `propagation`, `modes`, `mode_interaction`. Metadata và log từng lượt nằm ở `data/metadata/documents.jsonl` và `data/metadata/collection_log.jsonl`. Hai file JSONL chỉ xuất hiện sau khi chạy thật. Kiểm tra kết quả bằng:
 
@@ -153,7 +153,7 @@ python scripts/ingest.py --collection --topic pic_fundamentals
 python scripts/query.py 'What is an optical waveguide mode?' --collection --topic pic_fundamentals
 ```
 
-`ingest.py --collection` chỉ nạp các bản ghi có `file_path` trong manifest; bản ghi chỉ có metadata sẽ không được nạp. Bỏ `--topic` để nạp tất cả topic. Lịch trong `settings.yaml` chưa được nối với scheduler; các lệnh crawl hiện chạy thủ công.
+`ingest.py --collection` chỉ nạp bản ghi có `review_status: accepted` và `file_path` trong manifest. Bản ghi `needs_review`, `rejected` hoặc cũ không có trạng thái sẽ bị bỏ qua, đồng thời được đếm ở `not_accepted`. Bỏ `--topic` để nạp tất cả topic. Lịch trong `settings.yaml` chưa được nối với scheduler; các lệnh crawl hiện chạy thủ công.
 
 Mỗi dòng của bộ đánh giá JSONL cần `question` và `relevant_files` (danh sách tên file từ manifest), có thể thêm `topic_id`. Ví dụ:
 
@@ -198,9 +198,13 @@ Response gồm `answer`, `stats` (số tài liệu sau filter, số chunk hybrid
 | `DEFAULT_LANGUAGE` | `vi` | Ngôn ngữ gán cho tài liệu khi không truyền `--language` |
 | `DEVICE` | trống | `cpu`, `cuda`, `mps` |
 
-## Duyệt tài liệu đã thu thập
+## Validation tự động tài liệu đã thu thập
 
-Luồng collection ghi metadata vào manifest JSONL và có thể đánh dấu `review_required` theo điểm chất lượng. Dùng CLI riêng để kiểm tra nhanh nguồn/file và ghi quyết định của người duyệt:
+Crawler gán `review_status` tự động. Tài liệu đủ điểm (mặc định từ 70), có toàn văn và khớp chính sách nguồn được gán `accepted`; tài liệu chưa đủ bằng chứng như preprint, metadata-only hoặc nhà xuất bản chưa allowlist được gán `needs_review` và không đưa vào RAG. Ứng viên dưới điểm tối thiểu hoặc sai điều kiện chủ đề bị loại khỏi manifest. Lý do và phiên bản policy được lưu trong `validation_reasons` và `validation_policy_version`.
+
+Danh sách nhà xuất bản và nguồn tài liệu kỹ thuật được cấu hình trong `configs/collection/constraints.yaml`. Mặc định cho phép tài liệu kỹ thuật từ Ansys Optics theo domain allowlist ở `sources.yaml`, và một số nhà xuất bản học thuật. Với cấu hình nguồn hiện tại, Crossref chỉ lấy metadata và arXiv là preprint; do đó các bài báo này chưa có toàn văn được tự chấp nhận. Muốn tự chấp nhận bài báo, cần bổ sung nguồn tải toàn văn hợp lệ. Allowlist nhà xuất bản không xác minh venue cụ thể có phản biện; hãy chỉnh danh sách theo chính sách corpus. Citation hiện là tín hiệu cộng điểm, không phải điều kiện bắt buộc.
+
+Có thể dùng CLI review thủ công như công cụ kiểm tra/ghi đè ngoại lệ, nhưng không nằm trong luồng crawl tự động:
 
 ```bash
 python scripts/review_collection.py
@@ -209,7 +213,7 @@ python scripts/review_collection.py --set 'doi:10.1234/example' \
   --decision accepted --reviewer 'Tên người duyệt' --note 'Đã kiểm tra nguồn và phiên bản'
 ```
 
-Lệnh đầu liệt kê record chưa duyệt cùng gợi ý và lý do; `--show-all` cũng hiện các record đã có quyết định. Quyết định được ghi vào `review_status`, `reviewed_by`, `reviewed_at`, `review_note` trong manifest. Các lựa chọn là `accepted`, `needs_review`, `rejected`. Kiểm tra tự động chỉ phát hiện vấn đề cấu trúc/nguồn gốc như thiếu DOI/URL, metadata-only, file mất/hỏng hoặc nội dung trùng. Nó không tự kết luận độ uy tín khoa học; `accepted` chỉ được đặt khi người duyệt chủ động ghi quyết định.
+Lệnh đầu hiện trạng thái và lý do; `--show-all` cũng hiện các record đã có quyết định. Quyết định thủ công được ghi vào `review_status`, `reviewed_by`, `reviewed_at`, `review_note` trong manifest. Crawl tiếp theo sẽ tính lại trạng thái tự động theo policy cấu hình.
 
 Để lấy `identity` chính xác, xem danh sách từ lệnh đầu rồi truyền nguyên giá trị sau `--set` (ví dụ `doi:...` hoặc `arxiv:...`).
 

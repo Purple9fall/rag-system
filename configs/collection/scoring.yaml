@@ -38,5 +38,4 @@ recency:
 
 selection:
   minimum_score: 55
-  manual_review_below: 70
   sort_by: [score_desc, published_date_desc]
