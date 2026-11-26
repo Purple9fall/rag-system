@@ -1,0 +1,42 @@
+version: 1
+scale: 100
+weights:
+  topic_relevance: 40
+  source_authority: 20
+  technical_depth: 20
+  citation_signal: 10
+  recency: 10
+
+topic_relevance:
+  title_match_points: 20
+  abstract_match_points: 15
+  body_match_points: 5
+  require_core_term: true
+  negative_term_penalty: 15
+
+source_authority:
+  peer_reviewed_points: 20
+  official_documentation_points: 20
+  preprint_points: 12
+  other_points: 5
+
+technical_depth:
+  has_method_or_equations_points: 8
+  has_parameters_or_geometry_points: 6
+  has_results_or_benchmarks_points: 6
+
+citation_signal:
+  # Saturate the score so highly cited older papers do not dominate.
+  full_points_at_citations: 100
+  missing_count_points: 0
+
+recency:
+  full_points_within_years: 5
+  half_points_within_years: 15
+  older_points: 2
+  missing_date_points: 0
+
+selection:
+  minimum_score: 55
+  manual_review_below: 70
+  sort_by: [score_desc, published_date_desc]

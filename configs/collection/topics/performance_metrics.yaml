@@ -1,0 +1,15 @@
+id: performance_metrics
+collection_id: 01_photonicICfundamental
+enabled: true
+description: S-parameters S21/S31, insertion loss, imbalance, and bandwidth.
+search_queries:
+  - "photonic integrated circuit insertion loss return loss bandwidth metrics"
+  - "MMI coupler excess loss imbalance extinction ratio"
+  - "photonic device S parameters mesh convergence validation"
+  - "MMI S21 S31 insertion loss power imbalance bandwidth"
+arxiv_queries:
+  - "all:photonic AND all:insertion AND all:loss"
+  - "all:MMI AND all:bandwidth"
+core_terms: ["S21", "S31", "S parameters", "insertion loss", "excess loss", "return loss", "split ratio"]
+context_terms: ["bandwidth", "imbalance", "crosstalk", "extinction ratio", "convergence"]
+exclude_terms: ["wireless network throughput", "electrical power grid"]

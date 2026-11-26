@@ -1,0 +1,13 @@
+id: surrogate_modeling
+collection_id: 01_photonicICfundamental
+enabled: true
+description: Regression, Gaussian Processes, neural surrogates, and MAE/RMSE/R2 for PIC design.
+search_queries:
+  - "photonic device surrogate model Gaussian process regression"
+  - "MMI coupler neural surrogate MAE RMSE R2"
+arxiv_queries:
+  - "all:photonic AND all:surrogate"
+  - "all:waveguide AND all:surrogate"
+core_terms: ["surrogate model", "Gaussian process", "neural surrogate"]
+context_terms: ["photonic", "MMI", "regression", "MAE", "RMSE", "R2"]
+exclude_terms: ["medical surrogate", "climate surrogate"]

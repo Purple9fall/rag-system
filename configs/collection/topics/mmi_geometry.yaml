@@ -1,0 +1,13 @@
+id: mmi_geometry
+collection_id: 01_photonicICfundamental
+enabled: true
+description: MMI width, length, taper, port spacing, and design equations.
+search_queries:
+  - "MMI coupler width length taper port spacing design equations"
+  - "2x2 multimode interference coupler geometry optimization"
+arxiv_queries:
+  - "all:MMI AND all:geometry"
+  - "all:multimode AND all:taper"
+core_terms: ["MMI coupler", "multimode interference", "MMI splitter"]
+context_terms: ["width", "length", "taper", "port spacing", "design equation"]
+exclude_terms: ["multimodal machine learning", "microwave MMI"]

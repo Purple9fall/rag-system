@@ -1,0 +1,32 @@
+version: 1
+eligibility:
+  languages: [en]
+  document_types: [journal_article, conference_paper, preprint, technical_documentation]
+  # No publication-year floor: foundational PIC papers may be old.
+  published_from_year: null
+  published_through_year: null
+  require_title: true
+  require_abstract_or_body: true
+  require_topic_match: true
+
+download:
+  allowed_content_types: [application/pdf, text/html]
+  max_file_size_mb: 50
+  require_open_access_or_explicit_permission: true
+  respect_robots_txt: true
+  follow_redirects: true
+  max_redirects: 5
+  reject_login_or_paywall: true
+
+quality:
+  min_body_characters: 500
+  reject_retracted: true
+  reject_empty_or_broken_files: true
+  reject_duplicate_versions: true
+  # Preserve the published version when both it and a preprint are available.
+  preferred_version_order: [published, accepted_manuscript, preprint]
+
+deduplication:
+  identity_order: [doi, arxiv_id, canonical_url, sha256]
+  normalize_doi: true
+  normalize_urls: true

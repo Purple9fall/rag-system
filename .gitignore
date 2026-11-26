@@ -4,7 +4,13 @@ __pycache__/
 .venv/
 *.egg-info/
 .pytest_cache/
-data/raw/*
+history-report/
+data/raw/**/*
+!data/raw/**/
+!data/raw/**/.gitkeep
 data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+data/metadata/*.jsonl
+data/temp/*
+!data/temp/.gitkeep

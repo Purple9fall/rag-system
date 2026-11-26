@@ -1,0 +1,15 @@
+id: sin_platform
+collection_id: 01_photonicICfundamental
+enabled: true
+description: SiN material properties, refractive index, substrate, BOX, and PDK.
+search_queries:
+  - "silicon nitride SiN integrated photonics platform"
+  - "Si3N4 waveguide loss dispersion fabrication"
+  - "silicon nitride photonic integrated circuits review"
+  - "SiN photonics buried oxide BOX substrate PDK"
+arxiv_queries:
+  - "all:silicon AND all:nitride"
+  - "all:Si3N4 AND all:waveguide"
+core_terms: ["silicon nitride", "Si3N4", "SiN photonics"]
+context_terms: ["waveguide", "propagation loss", "dispersion", "fabrication", "refractive index", "substrate", "buried oxide", "PDK"]
+exclude_terms: ["silicon nitride ceramics", "silicon nitride mechanical properties"]
